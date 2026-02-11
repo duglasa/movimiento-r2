@@ -1,154 +1,97 @@
-html,
+html, 
 body {
-  width: 100%;
-  height: 100%;
-  padding: 0;
-  margin: 0;
-  font-family: sans-serif;
-  text-align: center;
-  position: relative;
-}
-
-.flex {
-  display: flex;
-  justify-content: space-around;
-  align-items: center;
-  flex-direction: row;
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    margin: 0;
+    font-family: sans-serif;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    flex-direction: row;
 }
 
 div * {
-  padding: 0;
-  margin: 0;
-  box-sizing: border-box;
-}
-
-footer {
-  margin: 10px auto;
-  font-weight: bold;
-  position: absolute;
-  bottom: 0;
-  left: calc(50% - 220px);
-  width: 440px;
+    padding: 0;
+    margin: 0;
+    box-sizing: border-box;
 }
 
 #pos {
-  max-width: 350px;
-  max-height: 200px;
-  width: 100%;
-  height: 100%;
-  border: 1px solid black;
-  text-align: center;
-  background-color: #ffffff;
-  transition: 0.85s linear;
-  margin: 20px;
-  padding: 10px;
-  border-radius: 10px;
+    max-width: 350px;
+    max-height: 30px;
+    width: 100%;
+    height: 100%;
+    border: 1px solid black;
+    text-align: center;
+    background-color: #ffffff;
+    transition: .85s linear;
+    margin: 20px;
+    padding: 10px;
+    border-radius: 10px;
 }
 
 h2 {
-  margin: 0;
+    margin: 0;
 }
 
 h2 span {
-  color: red;
+    color: red;
 }
 
 .turnheightlight {
-  background: #5cb85c;
-  color: white;
+    background: #5cb85c;
+    color: white;
 }
 
 #game {
-  max-height: 800px;
-  max-width: 800px;
-  width: 100%;
-  height: 100%;
-  margin: 10px;
-  display: grid;
-  grid-template-columns: 50px 50px 50px 50px 50px 50px 50px 50px 50px 50px 50px 50px 50px 50px;
-  grid-template-rows: 50px 50px 50px 50px 50px 50px 50px 50px 50px 50px 50px 50px 50px 50px;
-  justify-content: stretch;
-  position: relative;
+    max-height: 800px;
+    max-width: 800px;
+    width: 100%;
+    height: 100%;
+    margin: 10px;
+    display: grid;
+    grid-template-columns: 50px 50px 50px 50px 50px 50px 50px 50px 50px 50px 50px 50px 50px 50px;
+    grid-template-rows: 50px 50px 50px 50px 50px 50px 50px 50px 50px 50px 50px 50px 50px 50px;
+    justify-content: stretch;
+    position: relative;
 }
 
 .cellprefix {
-  width: 100%;
-  height: 100%;
-  max-width: 50px;
-  max-height: 50px;
-  padding: 15px 0 0 20px;
+    width: 100%;
+    height: 100%;
+    max-width: 50px;
+    max-height: 50px;
+    padding: 15px 0 0 20px;
 }
 
 .gamecell {
-  border: 1px solid black;
-  width: 100%;
-  height: 100%;
-  max-width: 50px;
-  max-height: 50px;
-  transition: all 0.5s ease-in-out;
-  border-radius: 5px;
-  font-size: 30pt;
-  z-index: 1;
+    border: 1px solid black;
+    width: 100%;
+    height: 100%;
+    max-width: 50px;
+    max-height: 50px;
+    transition: all 0.5s ease-in-out;
+    border-radius: 5px;
+    font-size: 30pt;
+    z-index: 1;
 }
 
 .grey {
-  background: rgba(128, 128, 128, 0.8);
+    background: rgba(128, 128, 128, 0.8);
 }
 
 .green {
-  background: rgb(65, 161, 73) !important;
+    background: rgb(65, 161, 73) !important;
 }
 
 .hidden {
-  display: none;
-}
-
-.canvas-container {
-  z-index: 2;
-  position: absolute !important;
-  top: 0;
+    display: none;
 }
 
 canvas {
-  z-index: 2;
-  position: absolute !important;
-  top: 0;
-  left: 50px !important;
-}
-
-#video-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, 200px);
-  grid-auto-rows: 200px;
-}
-
-video {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-#crear-sala {
-  width: 100%;
-  min-height: 200px;
-  text-align: center;
-}
-
-#sala,
-#nombre {
-  height: 50px;
-  width: 300px;
-  margin: 30px;
-  border-radius: 20px;
-  padding: 10px;
-}
-
-#crear,
-#generar {
-  height: 50px;
-  width: 300px;
-  margin: 30px;
-  border-radius: 20px;
-  background-color: #000;
-  color: white;
+    z-index: 2;
+    position: absolute;
+    top: 0;
+    left: 50px;
 }
