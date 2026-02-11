@@ -1,98 +1,180 @@
-const express = require('express');
+const express = require("express");
 const app = express();
-const serverless = require('serverless-http');
-const router = express.Router();
-const io = require('socket.io');
-
-// Serve static files
-app.use(express.static('public'));
-
-// Define routes
-router.get('/', (req, res) => {
-  res.sendFile(__dirname + '/public/index.html');
-});
-
-app.use('/.netlify/functions/server', router);
-
-// Socket.io setup
-const http = require('http').Server(app);
-const socketIo = io(http);
-var turno = ['mueve', 'mide', 'apunta'];
-var usuario = [];
+const http = require("http").Server(app);
+const io = require("socket.io")(http);
+var turno = ["mueve", "mide", "apunta"];
+var usuario = {};
 var i = 0;
+var Sockets = {};
 var activeSockets = [];
+var salas = {};
+var turnos = {};
+var turnolibre = [];
+var alumnos = {};
 
-socketIo.on('connection', (socket) => {
-  const existingSocket = activeSockets.find(
-    (existingSocket) => existingSocket === socket.id
-  );
+app.use(express.static("public"));
 
-  if (!existingSocket) {
-    activeSockets.push(socket.id);
+io.on("connection", socket => {
+  socket.on("join", datos => {
+    socket.join(datos.sala);
+    
+    // Inicializar turnos disponibles si no existen
+    if (!turnolibre[datos.sala]) {
+      turnolibre[datos.sala] = ['apunta', 'mide', 'mueve'];
+    }
+    
+    if (salas[datos.sala] === 3) {
+      io.to(socket.id).emit("sala_llena");
+      return;
+    }
 
-    socket.emit('update-user-list', {
-      users: activeSockets.filter(
-        (existingSocket) => existingSocket !== socket.id
-      ),
+    // Inicializar contador de sala
+    if (!salas[datos.sala]) {
+      salas[datos.sala] = 1;
+    } else {
+      salas[datos.sala] = salas[datos.sala] + 1;
+    }
+
+    // Asignar turno y notificar
+    let turnoAsignado = turnolibre[datos.sala].pop();
+    turnos[datos.nombre] = turnoAsignado;
+    io.to(socket.id).emit("nuevo_usuario", { turno: turnoAsignado });
+
+    // Si hay alumnos previos, sincronizar estado
+    if (alumnos[datos.sala]) {
+      io.to(socket.id).emit("posicion", {
+        alumno: alumnos[datos.sala]
+      });
+    }
+
+    // Manejar lista de usuarios
+    if (!Sockets[datos.sala]) {
+      Sockets[datos.sala] = [];
+    }
+
+    if (!Sockets[datos.sala].includes(datos.nombre)) {
+      Sockets[datos.sala].push(datos.nombre);
+      io.to(datos.sala).emit("update-user-list", {
+        users: Sockets[datos.sala]
+      });
+    }
+
+    socket.on("act_pos", data => {
+      io.to(data.to).emit("posicion1", {
+        x: data.x,
+        y: data.y,
+        anteriorx: data.anteriorx,
+        anteriory: data.anteriory
+      });
     });
 
-    socket.broadcast.emit('update-user-list', {
-      users: [socket.id],
-    });
-  }
+    socket.on("disconnect", () => {
+      if (datos && datos.sala) {
+        // Limpiar la lista de usuarios
+        Sockets[datos.sala] = Sockets[datos.sala].filter(
+          existingSocket => existingSocket !== datos.nombre
+        );
+        
+        // Restaurar el turno a la lista de turnos disponibles
+        if (turnos[datos.nombre]) {
+          if (!turnolibre[datos.sala]) {
+            turnolibre[datos.sala] = [];
+          }
+          turnolibre[datos.sala].push(turnos[datos.nombre]);
+          delete turnos[datos.nombre];
+        }
 
-  if (i > 2) {
-    i = 2;
-  }
-  usuario[i] = { id: socket.id, turno: turno[i++] };
-  console.log('nueva conexion id: ' + socket.id);
-  usuario.forEach((usuario) => {
-    console.log(usuario.id);
-    io.to(usuario.id).emit('nuevo_usuario', { turno: usuario.turno });
+        // Actualizar contador de la sala
+        if (salas[datos.sala] > 0) {
+          salas[datos.sala]--;
+        }
+
+        // Si la sala queda vacía, limpiar su estado
+        if (salas[datos.sala] === 0) {
+          delete salas[datos.sala];
+          delete turnolibre[datos.sala];
+          delete alumnos[datos.sala];
+        }
+
+        // Notificar a los demás usuarios
+        io.to(datos.sala).emit("remove-user", {
+          nombre: datos.nombre
+        });
+      }
+    });
+
+    socket.on("movimiento", data => {
+      alumnos[datos.sala] = data.alumno;
+      io.in(datos.sala).emit("mover", {
+        x: data.x,
+        y: data.y,
+        anteriorx: data.anteriorx,
+        anteriory: data.anteriory,
+        nombre: data.nombre
+      });
+    });
+
+    socket.on("cambia_turno", data => {
+      io.to(data.sala).emit("cambiar");
+    });
+
+    socket.on("act_turno", data => {
+      console.log(turnolibre[data.sala])
+      let index = turnolibre[data.sala].indexOf(data.turno);
+      console.log(index)
+      console.log('anterior: ' + turnolibre[data.sala][index])
+      switch (data.turno) {
+          case 'mueve':  
+            turnolibre[data.sala][index] = 'mide';
+            break;
+          case 'mide':
+            turnolibre[data.sala][index] = 'apunta';
+            break;
+          case 'apunta':
+            turnolibre[data.sala][index] = 'mueve';
+            break;
+          default:
+            break;
+        }
+      console.log('nuevo: ' + turnolibre[data.sala][index])
+      turnos[data.nombre] = data.turno;
+    });
+
+    socket.on("call-user", data => {
+      io.to(data.to).emit("call-made", {
+        offer: data.offer,
+        socket: socket.id
+      });
+    });
+
+    socket.on("make-answer", data => {
+      io.to(data.to).emit("answer-made", {
+        socket: socket.id,
+        answer: data.answer
+      });
+    });
+
+    socket.on("nueva-linea", data => {
+      io.to(data.sala).emit("crea-linea", {
+        linea: data.linea
+      });
+    });
+
+    socket.on("actualizar-linea", data => {
+      io.to(data.sala).emit("act-linea", {
+        linea: data.linea,
+        medicion: data.medicion
+      });
+    });
+
+    socket.on("borrar-linea", data => {
+      io.to(data.sala).emit("borra-linea", {
+        linea: data.linea
+      });
+    });
   });
-
-  socket.on('disconnect', () => {
-    activeSockets = activeSockets.filter(
-      (existingSocket) => existingSocket !== socket.id
-    );
-    socket.broadcast.emit('remove-user', {
-      socketId: socket.id,
-    });
-  });
-
-  socket.on('movimiento', (datos) => {
-    io.emit('mover', {
-      x: datos.x,
-      y: datos.y,
-    });
-  });
-  socket.on('cambia_turno', () => {
-    i = 0;
-    let us = turno.shift();
-    turno.push(us);
-    console.log(turno);
-    usuario.forEach((usuario) => {
-      io.to(usuario.id).emit('nuevo_usuario', { turno: turno[i] });
-      console.log(usuario.id, turno[i++]);
-    });
-  });
-
-  socket.on('call-user', (data) => {
-    socket.to(data.to).emit('call-made', {
-      offer: data.offer,
-      socket: socket.id,
-    });
-  });
-
-  socket.on('make-answer', (data) => {
-    socket.to(data.to).emit('answer-made', {
-      socket: socket.id,
-      answer: data.answer,
-    });
-  });
-
-  socket.emit('evento2', () => {});
 });
 
-module.exports = app;
-module.exports.handler = serverless(app);
+http.listen(3000, () => {
+  console.log(`listening on *np:3000`);
+});
