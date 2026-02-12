@@ -1,5 +1,5 @@
 var socket = io();
-var lineMetersTotal;
+var lineMetersTotal = 0;
 let sala, nombre, body, turno;
 var anteriorx = 0, anteriory = 0;
 
@@ -113,7 +113,7 @@ let main = {
       if (dir === "Enter") {
         if (main.alumno.eje === "x") {
           main.alumno.eje = "y";
-          $("#eje").html("Y");
+          $("#eje").html(" Y");
         } else {
           main.alumno.eje = "x";
           main.alumno.movimientos--;
@@ -121,7 +121,7 @@ let main = {
           $("#" + main.alumno.anteriorx + "_" + main.alumno.anteriory).html("");
           main.alumno.anteriorx = main.alumno.x;
           main.alumno.anteriory = main.alumno.y;
-          $("#eje").html("X");
+          $("#eje").html(" X");
         }
         if (!main.alumno.movimientos) {
           socket.emit("cambia_turno", {
@@ -255,7 +255,7 @@ let main = {
         var distance = Math.sqrt(linePixelsX * linePixelsX + linePixelsY * linePixelsY);
         lineMetersTotal = (distance / 50).toFixed(2);
         
-        $("#eje").html(lineMetersTotal + " cm");
+        $("#eje").html(" " + lineMetersTotal + " cm");
         canvas.renderAll();
         
         socket.emit("actualizar-linea", {
