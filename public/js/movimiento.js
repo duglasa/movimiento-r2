@@ -4,6 +4,7 @@ let sala, nombre, body, turno;
 var anteriorx = 0, anteriory = 0;
 
 var primera = false;
+var userCount = 0;
 
 $("#crear").on("click", () => {
   sala = $("#sala").val();
@@ -45,7 +46,7 @@ let main = {
   },
 
   methods: {
-    iniciar: function() {
+    iniciar: function () {
       $(".gamecell").attr("chess", "null");
       $("#" + main.alumno.x + "_" + main.alumno.y).html(main.alumno.img);
       $("#" + main.alumno.x + "_" + main.alumno.y).html("●");
@@ -54,7 +55,7 @@ let main = {
       this.actualizarInterfaz();
     },
 
-    actualizarInterfaz: function() {
+    actualizarInterfaz: function () {
       // Limpiar estado del canvas
       if (canvas) {
         canvas.off('mouse:down');
@@ -79,12 +80,20 @@ let main = {
           $("#gen").addClass("hidden");
           $(".canvas-container").addClass("hidden");
           break;
-          
+
         case "mide":
-          $("#quien").html("Estas midiendo");
+          if (userCount === 2) {
+            $("#quien").html("Estas midiendo y apuntando");
+            $("#gen").removeClass("hidden");
+          } else {
+            $("#quien").html("Estas midiendo");
+            $("#gen").addClass("hidden");
+          }
+          if ($("#eje").html() === "X") {
+            $("#eje").html("0 cm");
+          }
           $("#eje").removeClass("hidden");
           $("#pos").addClass("hidden");
-          $("#gen").addClass("hidden");
           $(".canvas-container").removeClass("hidden");
           // Usar setTimeout para asegurar que el canvas esté listo
           setTimeout(() => {
@@ -93,7 +102,7 @@ let main = {
             this.medir();
           }, 100);
           break;
-          
+
         case "apunta":
           $("#quien").html("Recuerda apuntar los datos");
           $("#eje").removeClass("hidden");
@@ -109,7 +118,7 @@ let main = {
           break;
       }
     },
-    mover: function(dir) {
+    mover: function (dir) {
       if (dir === "Enter") {
         if (main.alumno.eje === "x") {
           main.alumno.eje = "y";
@@ -155,36 +164,36 @@ let main = {
         if (main.alumno.y < 0) {
           $("#pos").html(
             "Tu posición actual es: (" +
-              main.alumno.x +
-              "," +
-              main.alumno.y +
-              ")"
+            main.alumno.x +
+            "," +
+            main.alumno.y +
+            ")"
           );
         } else {
           $("#pos").html(
             "Tu posición actual es: (" +
-              main.alumno.x +
-              ", " +
-              main.alumno.y +
-              ")"
+            main.alumno.x +
+            ", " +
+            main.alumno.y +
+            ")"
           );
         }
       } else {
         if (main.alumno.y < 0) {
           $("#pos").html(
             "Tu posición actual es: ( " +
-              main.alumno.x +
-              "," +
-              main.alumno.y +
-              ")"
+            main.alumno.x +
+            "," +
+            main.alumno.y +
+            ")"
           );
         } else {
           $("#pos").html(
             "Tu posición actual es: ( " +
-              main.alumno.x +
-              ", " +
-              main.alumno.y +
-              ")"
+            main.alumno.x +
+            ", " +
+            main.alumno.y +
+            ")"
           );
         }
       }
@@ -204,9 +213,9 @@ let main = {
         alumno: main.alumno
       });
     },
-    medir: function() {
+    medir: function () {
       if (main.alumno.turno !== "mide") return;
-      
+
       console.log("Iniciando modo medición");
       // Limpiar estado previo
       canvas.off('mouse:down');
@@ -214,14 +223,14 @@ let main = {
       canvas.off('mouse:up');
       canvas.clear();
       canvas.renderAll();
-      
+
       let line = null;
       let isDown = false;
       let startx, starty;
 
-      canvas.on("mouse:down", function(o) {
+      canvas.on("mouse:down", function (o) {
         if (main.alumno.turno !== "mide") return;
-        
+
         isDown = true;
         var pointer = canvas.getPointer(o.e);
         startx = pointer.x;
@@ -243,9 +252,9 @@ let main = {
         });
       });
 
-      canvas.on("mouse:move", function(o) {
+      canvas.on("mouse:move", function (o) {
         if (!isDown || !line || main.alumno.turno !== "mide") return;
-        
+
         var pointer = canvas.getPointer(o.e);
         line.set({ x2: pointer.x, y2: pointer.y });
 
@@ -254,10 +263,10 @@ let main = {
         var linePixelsY = starty - pointer.y;
         var distance = Math.sqrt(linePixelsX * linePixelsX + linePixelsY * linePixelsY);
         lineMetersTotal = (distance / 50).toFixed(2);
-        
+
         $("#eje").html(" " + lineMetersTotal + " cm");
         canvas.renderAll();
-        
+
         socket.emit("actualizar-linea", {
           linea: pointer,
           sala: sala,
@@ -265,9 +274,9 @@ let main = {
         });
       });
 
-      canvas.on("mouse:up", function(o) {
+      canvas.on("mouse:up", function (o) {
         if (!isDown || !line || main.alumno.turno !== "mide") return;
-        
+
         isDown = false;
         socket.emit("borrar-linea", {
           linea: line,
@@ -279,9 +288,9 @@ let main = {
       });
     },
 
-    apuntar: function() {
+    apuntar: function () {
       if (main.alumno.turno !== "apunta") return;
-      
+
       console.log("Iniciando modo apuntar");
       // Limpiar estado previo
       canvas.off('mouse:down');
@@ -296,10 +305,10 @@ let main = {
       socket.off("borra-linea");
 
       let lin = null;
-      
+
       socket.on("crea-linea", data => {
         if (main.alumno.turno !== "apunta") return;
-        
+
         lin = new fabric.Line(data.linea, {
           strokeWidth: 2,
           fill: "yellow",
@@ -313,7 +322,7 @@ let main = {
 
       socket.on("act-linea", data => {
         if (main.alumno.turno !== "apunta" || !lin) return;
-        
+
         lin.set({ x2: data.linea.x, y2: data.linea.y });
         canvas.renderAll();
         $("#eje").html(data.medicion + " cm");
@@ -321,7 +330,7 @@ let main = {
 
       socket.on("borra-linea", data => {
         if (main.alumno.turno !== "apunta" || !lin) return;
-        
+
         canvas.remove(lin);
         canvas.renderAll();
         lin = null;
@@ -330,7 +339,7 @@ let main = {
   }
 };
 
-$(document).ready(function() {
+$(document).ready(function () {
   body = document.querySelector("body");
   turno = document.querySelector("#turno");
   main.methods.iniciar();
@@ -343,7 +352,7 @@ $(document).ready(function() {
     console.log("Nuevo usuario con turno:", data.turno);
     main.alumno.turno = data.turno;
     $("#turno").html(main.alumno.turno);
-    
+
     // Inicializar correctamente según el turno
     if (data.turno === "mide") {
       $(".canvas-container").removeClass("hidden");
@@ -366,7 +375,7 @@ $(document).ready(function() {
     socket.off("crea-linea");
     socket.off("act-linea");
     socket.off("borra-linea");
-    
+
     switch (main.alumno.turno) {
       case "mide":
         main.alumno.turno = "mueve";
@@ -377,14 +386,18 @@ $(document).ready(function() {
         $(".canvas-container").removeClass("hidden");
         break;
       case "mueve":
-        main.alumno.turno = "apunta";
+        if (userCount === 2) {
+          main.alumno.turno = "mide";
+        } else {
+          main.alumno.turno = "apunta";
+        }
         $(".canvas-container").removeClass("hidden");
         break;
     }
-    
+
     $("#turno").html(main.alumno.turno);
     main.methods.actualizarInterfaz();
-    
+
     socket.emit("act_turno", {
       turno: main.alumno.turno,
       sala: sala,
@@ -409,7 +422,7 @@ $(document).ready(function() {
     main.alumno.x = data.x;
     main.alumno.y = data.y;
     $("#" + main.alumno.x + "_" + main.alumno.y).html(main.alumno.img);
-    
+
     // Actualizar posición en texto solo si es relevante
     if (main.alumno.turno === "mueve") {
       actualizarTextoPos();
@@ -421,36 +434,36 @@ $(document).ready(function() {
       if (main.alumno.y < 0) {
         $("#pos").html(
           "Tu posición actual es: (" +
-            main.alumno.x +
-            "," +
-            main.alumno.y +
-            ")"
+          main.alumno.x +
+          "," +
+          main.alumno.y +
+          ")"
         );
       } else {
         $("#pos").html(
           "Tu posición actual es: (" +
-            main.alumno.x +
-            ", " +
-            main.alumno.y +
-            ")"
+          main.alumno.x +
+          ", " +
+          main.alumno.y +
+          ")"
         );
       }
     } else {
       if (main.alumno.y < 0) {
         $("#pos").html(
           "Tu posición actual es: ( " +
-            main.alumno.x +
-            "," +
-            main.alumno.y +
-            ")"
+          main.alumno.x +
+          "," +
+          main.alumno.y +
+          ")"
         );
       } else {
         $("#pos").html(
           "Tu posición actual es: ( " +
-            main.alumno.x +
-            ", " +
-            main.alumno.y +
-            ")"
+          main.alumno.x +
+          ", " +
+          main.alumno.y +
+          ")"
         );
       }
     }
@@ -461,7 +474,7 @@ $(document).ready(function() {
     main.alumno.turno = data.turno;
     console.log(main.alumno.turno);
     $("#turno").html(main.alumno.turno);
-    
+
     // Inicializar el canvas según el turno asignado
     if (data.turno === "mide") {
       $(".canvas-container").removeClass("hidden");
@@ -474,18 +487,22 @@ $(document).ready(function() {
     }
   });
 
-  socket.on("update-user-list", ({ users}) => {
+  socket.on("update-user-list", ({ users }) => {
     console.log(users);
-      users.forEach(user => {
-        if (user !== nombre) {
-          const yaExiste = document.getElementById(user);
-          if (!yaExiste) {
-            $("#conectados").append(
-              '<li class="usuario" id="' + user + '">' + user + "</li>"
-            );
-          }
+    userCount = users.length;
+    users.forEach(user => {
+      if (user !== nombre) {
+        const yaExiste = document.getElementById(user);
+        if (!yaExiste) {
+          $("#conectados").append(
+            '<li class="usuario" id="' + user + '">' + user + "</li>"
+          );
         }
-      });
+      }
+    });
+
+    // Actualizar la interfaz por si el número de usuarios cambia el comportamiento (ej: 2 usuarios)
+    main.methods.actualizarInterfaz();
   });
 
   socket.on("remove-user", ({ nombre }) => {
@@ -503,7 +520,7 @@ $(document).ready(function() {
     $("#llena").removeClass("hidden");
   });
 
-  socket.on("cambiar", () => {
+  socket.on("cambiar_unused", () => {
     let actual = main.alumno.turno;
     switch (main.alumno.turno) {
       case "mide":
@@ -532,11 +549,11 @@ $(document).ready(function() {
     socket.emit("act_turno", {
       turno: main.alumno.turno,
       sala: sala,
-      nombre: nombre, 
+      nombre: nombre,
       anterior: actual
     });
   });
-  
+
   socket.on("actualizar_pos", data => {
     socket.emit("act_pos", {
       to: data.to,
@@ -546,7 +563,7 @@ $(document).ready(function() {
       anteriory: main.alumno.anteriory
     })
   })
-  
+
   socket.on("posicion", data => {
     main.alumno.x = data.alumno.x
     main.alumno.y = data.alumno.y
@@ -558,45 +575,45 @@ $(document).ready(function() {
     $("#0_0").html("");
     $("#turno").html(main.alumno.turno);
     if (main.alumno.x < 0) {
-        if (main.alumno.y < 0) {
-          $("#pos").html(
-            "Tu posición actual es: (" +
-              main.alumno.x +
-              "," +
-              main.alumno.y +
-              ")"
-          );
-        } else {
-          $("#pos").html(
-            "Tu posición actual es: (" +
-              main.alumno.x +
-              ", " +
-              main.alumno.y +
-              ")"
-          );
-        }
+      if (main.alumno.y < 0) {
+        $("#pos").html(
+          "Tu posición actual es: (" +
+          main.alumno.x +
+          "," +
+          main.alumno.y +
+          ")"
+        );
       } else {
-        if (main.alumno.y < 0) {
-          $("#pos").html(
-            "Tu posición actual es: ( " +
-              main.alumno.x +
-              "," +
-              main.alumno.y +
-              ")"
-          );
-        } else {
-          $("#pos").html(
-            "Tu posición actual es: ( " +
-              main.alumno.x +
-              ", " +
-              main.alumno.y +
-              ")"
-          );
-        }
+        $("#pos").html(
+          "Tu posición actual es: (" +
+          main.alumno.x +
+          ", " +
+          main.alumno.y +
+          ")"
+        );
       }
+    } else {
+      if (main.alumno.y < 0) {
+        $("#pos").html(
+          "Tu posición actual es: ( " +
+          main.alumno.x +
+          "," +
+          main.alumno.y +
+          ")"
+        );
+      } else {
+        $("#pos").html(
+          "Tu posición actual es: ( " +
+          main.alumno.x +
+          ", " +
+          main.alumno.y +
+          ")"
+        );
+      }
+    }
     $("#eje").html(main.alumno.eje.toUpperCase());
   })
-  
+
   socket.on("posicion2", data => {
     main.alumno.x = data.x
     main.alumno.y = data.y
@@ -606,41 +623,41 @@ $(document).ready(function() {
     $("#" + main.alumno.x + "_" + main.alumno.y).html(main.alumno.img);
     $("#" + main.alumno.anteriorx + "_" + main.alumno.anteriory).html("●");
     if (main.alumno.x < 0) {
-        if (main.alumno.y < 0) {
-          $("#pos").html(
-            "Tu posición actual es: (" +
-              main.alumno.x +
-              "," +
-              main.alumno.y +
-              ")"
-          );
-        } else {
-          $("#pos").html(
-            "Tu posición actual es: (" +
-              main.alumno.x +
-              ", " +
-              main.alumno.y +
-              ")"
-          );
-        }
+      if (main.alumno.y < 0) {
+        $("#pos").html(
+          "Tu posición actual es: (" +
+          main.alumno.x +
+          "," +
+          main.alumno.y +
+          ")"
+        );
       } else {
-        if (main.alumno.y < 0) {
-          $("#pos").html(
-            "Tu posición actual es: ( " +
-              main.alumno.x +
-              "," +
-              main.alumno.y +
-              ")"
-          );
-        } else {
-          $("#pos").html(
-            "Tu posición actual es: ( " +
-              main.alumno.x +
-              ", " +
-              main.alumno.y +
-              ")"
-          );
-        }
+        $("#pos").html(
+          "Tu posición actual es: (" +
+          main.alumno.x +
+          ", " +
+          main.alumno.y +
+          ")"
+        );
       }
+    } else {
+      if (main.alumno.y < 0) {
+        $("#pos").html(
+          "Tu posición actual es: ( " +
+          main.alumno.x +
+          "," +
+          main.alumno.y +
+          ")"
+        );
+      } else {
+        $("#pos").html(
+          "Tu posición actual es: ( " +
+          main.alumno.x +
+          ", " +
+          main.alumno.y +
+          ")"
+        );
+      }
+    }
   })
 });
